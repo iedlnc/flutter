@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,11 +27,10 @@ class DetailScreen extends StatefulWidget {
 class _DetailScreenState extends State<DetailScreen> {
   late Future<WebtoonDetailModel> webtoon;
   late Future<List<WebtoonEpisodeModel>> episodes;
-
   late SharedPreferences prefs;
   bool isLiked = false;
 
-  Future initPrefs() async {
+  Future initPref() async {
     prefs = await SharedPreferences.getInstance();
     final likedToons = prefs.getStringList('likedToons');
     if (likedToons != null) {
@@ -47,8 +48,8 @@ class _DetailScreenState extends State<DetailScreen> {
   void initState() {
     super.initState();
     webtoon = ApiService.getToonById(widget.id);
-    episodes = ApiService.getLatestEpisodesById(widget.id);
-    initPrefs();
+    episodes = ApiService.getLatestEpisodesBtId(widget.id);
+    initPref();
   }
 
   onHeartTap() async {
@@ -72,13 +73,15 @@ class _DetailScreenState extends State<DetailScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 2,
+        surfaceTintColor: Colors.white,
+        shadowColor: Colors.black,
         backgroundColor: Colors.white,
         foregroundColor: Colors.green,
         actions: [
           IconButton(
             onPressed: onHeartTap,
             icon: Icon(
-              isLiked ? Icons.favorite : Icons.favorite_outline,
+              isLiked ? Icons.favorite : Icons.favorite_outline_rounded,
             ),
           )
         ],
@@ -86,12 +89,16 @@ class _DetailScreenState extends State<DetailScreen> {
           widget.title,
           style: const TextStyle(
             fontSize: 24,
+            fontWeight: FontWeight.w400,
           ),
         ),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(50),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 50,
+            vertical: 50,
+          ),
           child: Column(
             children: [
               Row(
@@ -103,16 +110,20 @@ class _DetailScreenState extends State<DetailScreen> {
                       width: 250,
                       clipBehavior: Clip.hardEdge,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: [
-                          BoxShadow(
-                            blurRadius: 15,
-                            offset: const Offset(10, 10),
-                            color: Colors.black.withOpacity(0.3),
-                          )
-                        ],
+                          borderRadius: BorderRadius.circular(15),
+                          boxShadow: [
+                            BoxShadow(
+                                blurRadius: 15,
+                                offset: const Offset(10, 10),
+                                color: Colors.black.withOpacity(0.3))
+                          ]),
+                      child: Image.network(
+                        widget.thumb,
+                        headers: const {
+                          "User-Agent":
+                              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+                        },
                       ),
-                      child: Image.network(widget.thumb),
                     ),
                   ),
                 ],
@@ -129,14 +140,18 @@ class _DetailScreenState extends State<DetailScreen> {
                       children: [
                         Text(
                           snapshot.data!.about,
-                          style: const TextStyle(fontSize: 16),
+                          style: const TextStyle(
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(
                           height: 15,
                         ),
                         Text(
-                          '${snapshot.data!.genre}/${snapshot.data!.age}',
-                          style: const TextStyle(fontSize: 16),
+                          '${snapshot.data!.genre} / ${snapshot.data!.age}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                          ),
                         ),
                       ],
                     );
@@ -153,11 +168,10 @@ class _DetailScreenState extends State<DetailScreen> {
                   if (snapshot.hasData) {
                     return Column(
                       children: [
-                        for (var episode in snapshot.data!)
-                          Episode(
-                            episode: episode,
-                            webtoonID: widget.id,
-                          )
+                        for (var episode in snapshot.data!.length > 10
+                            ? snapshot.data!.sublist(0, 10)
+                            : snapshot.data!)
+                          Episode(episode: episode, webtoonId: widget.id)
                       ],
                     );
                   }
