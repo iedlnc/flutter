@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// http 패키지 추가
+import 'package:http/http.dart' as http;
 
-//import 'package:url_launcher/url_launcher.dart';
-//import 'package:url_launcher/url_launcher_string.dart';
 import 'package:webtoon_test/models/webtoon_detail_model.dart';
 import 'package:webtoon_test/models/webtoon_episode_model.dart';
 import 'package:webtoon_test/services/api_server.dart';
@@ -67,6 +67,19 @@ class _DetailScreenState extends State<DetailScreen> {
     }
   }
 
+  // 웹 이미지 로드를 위한 함수 추가 (안드로이드 에뮬레이터 지원)
+  Future<Image> loadNetworkImage(String url) async {
+    final response = await http.get(Uri.parse(url), headers: {
+      "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
+    });
+    if (response.statusCode == 200) {
+      return Image.memory(response.bodyBytes);
+    } else {
+      throw Exception('Failed to load image');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,24 +119,30 @@ class _DetailScreenState extends State<DetailScreen> {
                 children: [
                   Hero(
                     tag: widget.id,
-                    child: Container(
-                      width: 250,
-                      clipBehavior: Clip.hardEdge,
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          boxShadow: [
-                            BoxShadow(
-                                blurRadius: 15,
-                                offset: const Offset(10, 10),
-                                color: Colors.black.withOpacity(0.3))
-                          ]),
-                      child: Image.network(
-                        widget.thumb,
-                        headers: const {
-                          "User-Agent":
-                              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
-                        },
-                      ),
+                    child: FutureBuilder<Image>(
+                      future: loadNetworkImage(widget.thumb),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.done) {
+                          if (snapshot.hasData) {
+                            return Container(
+                              width: 250,
+                              clipBehavior: Clip.hardEdge,
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(15),
+                                  boxShadow: [
+                                    BoxShadow(
+                                        blurRadius: 15,
+                                        offset: const Offset(10, 10),
+                                        color: Colors.black.withOpacity(0.3))
+                                  ]),
+                              child: snapshot.data,
+                            );
+                          } else if (snapshot.hasError) {
+                            return const Text('Failed to load image');
+                          }
+                        }
+                        return const CircularProgressIndicator();
+                      },
                     ),
                   ),
                 ],
