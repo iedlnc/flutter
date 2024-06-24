@@ -68,7 +68,6 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   // 웹 이미지 로드를 위한 함수 추가 (안드로이드 에뮬레이터 지원)
-  //aaaaaa
   Future<Image> loadNetworkImage(String url) async {
     final response = await http.get(Uri.parse(url), headers: {
       "User-Agent":
